@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CDM Generator</title>
+    <style>
+        body { 
+            font-family: 'Arial', sans-serif;
+            padding: 20px; 
+            background-color: #f4f4f4;
+            color: #333;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .dark-mode {
+            background-color: #1c253b;
+            color: #d4d4cd;
+        }
+        .button {
+            padding: 10px 20px;
+            background-color: #3675c1;  /* Primary brand color */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            display: block;
+            margin: 10px auto;
+            text-align: center;
+        }
+        .button:hover {
+            background-color: #668bb3;  /* Lighter shade of the primary color */
+        }
+        .file-container {
+            position: relative;
+            width: auto;
+            overflow: hidden;
+            display: inline-block;
+        }
+        .file-container input[type="file"] {
+            font-size: 100px;
+            position: absolute;
+            top: 0;
+            right: 0;
+            opacity: 0;
+        }
+        .section-container {
+            display: flex;
+            align-items: stretch;
+            margin-bottom: 20px;
+        }
+        .category-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #3675c1;  /* Unified color for headers */
+            color: white;
+            padding: 5px 10px;
+            /* writing-mode: vertical-lr;
+            transform: rotate(180deg); */
+            flex: 0 0 25px;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            text-align: center;
+            font-size: 0.85em;
+            transition: background-color 0.3s;
+        }        
+        .function-header-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #3675c1;  /* Unified color for headers */
+            color: white;
+            padding: 5px 10px;
+            writing-mode: vertical-lr;
+            transform: rotate(180deg);
+            flex: 0 0 25px;
+            border-radius: 6px;
+            margin-bottom: 5px;
+            text-align: center;
+            font-size: 0.85em;
+            transition: background-color 0.3s;
+        }
+        .dark-mode .function-header-container,
+        .dark-mode .category-header {
+            background-color: #668bb3;  /* Lighter shade for dark mode */
+        }
+        .container {
+            flex: 1;
+            background: white;
+            padding: 10px;
+            margin: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            transition: background-color 0.3s;
+        }
+        .dark-mode .container {
+            background: #2e3b55;
+        }
+        .tool {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            padding: 5px;
+            margin-top: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+        }
+        .dark-mode .tool {
+            background-color: #394a6d;
+            color: #d4d4cd;
+        }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 50%;
+            max-width: 600px;
+        }
+        .close-btn {
+            float: right;
+            font-size: 1.5em;
+            cursor: pointer;
+        }
+        .toggle-switch {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #3675c1;
+        }
+        input:focus + .slider {
+            box-shadow: 0 0 1px #3675c1;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .dark-mode-toggle-label {
+            margin-right: 10px;
+            font-size: 16px;
+            color: #333;
+        }
+        .dark-mode .dark-mode-toggle-label {
+            color: #d4d4cd;
+        }
+    </style>
+</head>
+<body>
+    <div class="toggle-switch">
+        <span class="dark-mode-toggle-label">Dark Mode:</span>
+        <label class="switch">
+            <input type="checkbox" id="darkModeToggle">
+            <span class="slider round"></span>
+        </label>
+    </div>
+    <h1>Cyber Defense Matrix Generator</h1>
+    <div class="file-container">
+        <button class="button">Choose File</button>
+        <input type="file" id="fileInput" accept=".json">
+    </div>
+    <div id="toolsContainer"></div>
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <p id="modalText"></p>
+        </div>
+    </div>
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const fileReader = new FileReader();
+            fileReader.onload = function() {
+                const tools = JSON.parse(fileReader.result);
+                updatePage(tools);
+            };
+            fileReader.readAsText(event.target.files[0]);
+        });
+
+        document.getElementById('darkModeToggle').addEventListener('change', function() {
+            if (this.checked) {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+        });
+    
+        let currentFilter = null;
+    
+        function updatePage(tools) {
+            const securityFunctions = ["govern", "identify", "protect", "deceive", "detect", "respond", "recover"];
+            const assetCategories = ["devices", "networks", "applications", "data", "users"];
+            const container = document.getElementById('toolsContainer');
+            const colors = ["#FFD700", "#FF6347", "#4682B4", "#32CD32", "#FF69B4", "#8A2BE2", "#00FA9A"];
+            let environments = [];
+    
+            // Extract unique environments
+            tools.forEach(tool => {
+                tool.environment.forEach(env => {
+                    if (!environments.includes(env) && tool.environment.length === 1) {
+                        environments.push(env);
+                    }
+                });
+            });
+    
+            // Adding a special entry for multiple environments
+            environments.push("multiple");
+            const multipleEnvironmentColor = "#DA70D6";
+    
+            // Associate each environment with a color
+            let environmentColorMap = {};
+            environments.forEach((env, index) => {
+                environmentColorMap[env] = env === "multiple" ? multipleEnvironmentColor : colors[index % colors.length];
+            });
+    
+            // Create a legend
+            const legendContainer = document.createElement('div');
+            legendContainer.style.display = 'flex';
+            legendContainer.style.justifyContent = 'center';
+            legendContainer.style.marginBottom = '20px';
+    
+            environments.forEach(env => {
+                const legendItem = document.createElement('div');
+                legendItem.textContent = env;
+                legendItem.style.backgroundColor = environmentColorMap[env];
+                legendItem.style.color = '#FFFFFF';
+                legendItem.style.padding = '5px 10px';
+                legendItem.style.marginRight = '10px';
+                legendItem.style.borderRadius = '5px';
+                legendItem.style.cursor = 'pointer';
+                legendItem.onclick = () => filterByEnvironment(env, tools, environmentColorMap);
+                legendContainer.appendChild(legendItem);
+            });
+    
+            container.appendChild(legendContainer);
+    
+            securityFunctions.forEach(functionName => {
+                const functionContainer = document.createElement('div');
+                functionContainer.className = 'section-container';
+    
+                const headerContainer = document.createElement('div');
+                headerContainer.className = 'function-header-container';
+                headerContainer.textContent = functionName.charAt(0).toUpperCase() + functionName.slice(1);
+                functionContainer.appendChild(headerContainer);
+    
+                container.appendChild(functionContainer);
+    
+                assetCategories.forEach(category => {
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.className = 'container';
+                    const categoryHeader = document.createElement('h3');
+                    categoryHeader.className = 'category-header';
+                    categoryHeader.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+                    categoryDiv.appendChild(categoryHeader);
+                    functionContainer.appendChild(categoryDiv);
+    
+                    tools.filter(tool => tool.security_function.map(f => f.toLowerCase()).includes(functionName) && tool.asset_category.map(c => c.toLowerCase()).includes(category)).forEach(tool => {
+                        const toolDiv = document.createElement('div');
+                        toolDiv.className = 'tool';
+                        toolDiv.textContent = tool.name;
+                        toolDiv.style.backgroundColor = tool.environment.length > 1 ? environmentColorMap["multiple"] : environmentColorMap[tool.environment[0]];
+                        toolDiv.dataset.environments = tool.environment.join(', ');
+                        toolDiv.onclick = function() {
+                            showModal(tool);
+                        };
+                        categoryDiv.appendChild(toolDiv);
+                    });
+                });
+            });
+        }
+    
+        function filterByEnvironment(env, tools, colorMap) {
+            if (currentFilter === env) {
+                currentFilter = null;
+                document.querySelectorAll('.tool').forEach(toolDiv => {
+                    toolDiv.style.display = '';
+                });
+            } else {
+                currentFilter = env;
+                document.querySelectorAll('.tool').forEach(toolDiv => {
+                    const environments = toolDiv.dataset.environments.split(', ');
+                    if (env === "multiple") {
+                        toolDiv.style.display = environments.length > 1 ? '' : 'none';
+                    } else {
+                        toolDiv.style.display = environments.includes(env) ? '' : 'none';
+                    }
+                });
+            }
+        }
+    
+        function showModal(tool) {
+            const modalText = document.getElementById('modalText');
+            modalText.innerHTML = `
+                <strong>Name:</strong> <a href='${tool.url}'>${tool.name}</a><br>
+                <strong>Security Functions:</strong> ${tool.security_function.join(', ')}<br>
+                <strong>Asset Categories:</strong> ${tool.asset_category.join(', ')}<br>
+                <strong>Environment:</strong> ${tool.environment.join(', ')}<br>
+                <strong>Maturity:</strong> ${tool.maturity}
+            `;
+            document.getElementById('modal').style.display = 'flex';
+        }
+    
+        document.getElementsByClassName('close-btn')[0].onclick = function() {
+            document.getElementById('modal').style.display = 'none';
+        };
+    
+        window.onclick = function(event) {
+            if (event.target === document.getElementById('modal')) {
+                document.getElementById('modal').style.display = 'none';
+            }
+        };
+    </script>
+    
+</body>
+</html>
