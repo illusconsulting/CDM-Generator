@@ -14,9 +14,9 @@
         }
         .dark-mode {
             background-color: #1c253b;
-            color: #d4d4cd;
+            color: darkslategray;
         }
-        .button {
+        .button, .tab {
             padding: 10px 20px;
             background-color: #3675c1;  /* Primary brand color */
             color: white;
@@ -28,8 +28,20 @@
             margin: 10px auto;
             text-align: center;
         }
-        .button:hover {
+        .tab.active {
+            background-color: #668bb3;
+        }
+        .button:hover, .tab:hover {
             background-color: #668bb3;  /* Lighter shade of the primary color */
+        }
+        .content {
+            display: none;
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+        }
+        .content.active {
+            display: block;
         }
         .file-container {
             position: relative;
@@ -210,7 +222,31 @@
         <button class="button">Choose File</button>
         <input type="file" id="fileInput" accept=".json">
     </div>
-    <div id="toolsContainer"></div>
+    <div>
+        <button class="button" onclick="showContent('matrix')">Matrix View</button>
+        <button class="button" onclick="showContent('table')">Table View</button>
+    </div>
+    <div id="toolsContainer">
+        <div id="matrix" class="content">
+            <!-- Matrix will be generated here -->
+        </div>
+    </div>
+    <div id="table" class="content">
+        <table id="toolTable">
+            <thead>
+            <tr>
+                <th>Tool Name</th>
+                <th>Security Functions</th>
+                <th>Asset Categories</th>
+                <th>Environments</th>
+                <th>Maturity</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Data rows will be added here -->
+        </tbody>
+        </table>
+    </div>
     <div id="modal" class="modal">
         <div class="modal-content">
             <span class="close-btn">&times;</span>
@@ -223,6 +259,7 @@
             fileReader.onload = function() {
                 const tools = JSON.parse(fileReader.result);
                 updatePage(tools);
+                generateTable(tools);
             };
             fileReader.readAsText(event.target.files[0]);
         });
@@ -234,16 +271,16 @@
                 document.body.classList.remove('dark-mode');
             }
         });
-    
+
         let currentFilter = null;
-    
+
         function updatePage(tools) {
             const securityFunctions = ["govern", "identify", "protect", "deceive", "detect", "respond", "recover"];
             const assetCategories = ["devices", "networks", "applications", "data", "users"];
-            const container = document.getElementById('toolsContainer');
+            const container = document.getElementById('matrix');
             const colors = ["#FFD700", "#FF6347", "#4682B4", "#32CD32", "#FF69B4", "#8A2BE2", "#00FA9A"];
             let environments = [];
-    
+
             // Extract unique environments
             tools.forEach(tool => {
                 tool.environment.forEach(env => {
@@ -252,23 +289,23 @@
                     }
                 });
             });
-    
+
             // Adding a special entry for multiple environments
             environments.push("multiple");
             const multipleEnvironmentColor = "#DA70D6";
-    
+
             // Associate each environment with a color
             let environmentColorMap = {};
             environments.forEach((env, index) => {
                 environmentColorMap[env] = env === "multiple" ? multipleEnvironmentColor : colors[index % colors.length];
             });
-    
+
             // Create a legend
             const legendContainer = document.createElement('div');
             legendContainer.style.display = 'flex';
             legendContainer.style.justifyContent = 'center';
             legendContainer.style.marginBottom = '20px';
-    
+
             environments.forEach(env => {
                 const legendItem = document.createElement('div');
                 legendItem.textContent = env;
@@ -281,20 +318,20 @@
                 legendItem.onclick = () => filterByEnvironment(env, tools, environmentColorMap);
                 legendContainer.appendChild(legendItem);
             });
-    
+
             container.appendChild(legendContainer);
-    
+
             securityFunctions.forEach(functionName => {
                 const functionContainer = document.createElement('div');
                 functionContainer.className = 'section-container';
-    
+
                 const headerContainer = document.createElement('div');
                 headerContainer.className = 'function-header-container';
                 headerContainer.textContent = functionName.charAt(0).toUpperCase() + functionName.slice(1);
                 functionContainer.appendChild(headerContainer);
-    
+
                 container.appendChild(functionContainer);
-    
+
                 assetCategories.forEach(category => {
                     const categoryDiv = document.createElement('div');
                     categoryDiv.className = 'container';
@@ -303,8 +340,19 @@
                     categoryHeader.textContent = category.charAt(0).toUpperCase() + category.slice(1);
                     categoryDiv.appendChild(categoryHeader);
                     functionContainer.appendChild(categoryDiv);
-    
-                    tools.filter(tool => tool.security_function.map(f => f.toLowerCase()).includes(functionName) && tool.asset_category.map(c => c.toLowerCase()).includes(category)).forEach(tool => {
+
+                    const filteredTools = tools.filter(tool => tool.security_function.map(f => f.toLowerCase()).includes(functionName) && tool.asset_category.map(c => c.toLowerCase()).includes(category) && tool.maturity);
+                    if (filteredTools.length > 0) {
+                        const meanMetric = calculateMeanMetric(filteredTools);
+                        const metricDiv = document.createElement('div');
+                        metricDiv.textContent = `Maturity Score: ${meanMetric}`;
+                        metricDiv.style.padding = '5px';
+                        metricDiv.style.marginTop = '5px';
+                        metricDiv.style.backgroundColor = '#f0f0f0';
+                        categoryDiv.appendChild(metricDiv);
+                    }
+
+                    filteredTools.forEach(tool => {
                         const toolDiv = document.createElement('div');
                         toolDiv.className = 'tool';
                         toolDiv.textContent = tool.name;
@@ -318,7 +366,20 @@
                 });
             });
         }
-    
+
+        function calculateMeanMetric(tools) {
+            let totalNumerator = 0;
+            let totalDenominator = 0;
+            tools.forEach(tool => {
+                let [numerator, denominator] = tool.maturity.split('/').map(Number);
+                totalNumerator += numerator;
+                totalDenominator += denominator;
+            });
+            let meanNumerator = (totalNumerator / tools.length).toFixed(2);
+            let meanDenominator = (totalDenominator / tools.length).toFixed(2);
+            return `${meanNumerator}/${meanDenominator}`;
+        }
+
         function filterByEnvironment(env, tools, colorMap) {
             if (currentFilter === env) {
                 currentFilter = null;
@@ -329,15 +390,11 @@
                 currentFilter = env;
                 document.querySelectorAll('.tool').forEach(toolDiv => {
                     const environments = toolDiv.dataset.environments.split(', ');
-                    if (env === "multiple") {
-                        toolDiv.style.display = environments.length > 1 ? '' : 'none';
-                    } else {
-                        toolDiv.style.display = environments.includes(env) ? '' : 'none';
-                    }
+                    toolDiv.style.display = environments.includes(env) ? '' : 'none';
                 });
             }
         }
-    
+
         function showModal(tool) {
             const modalText = document.getElementById('modalText');
             modalText.innerHTML = `
@@ -349,16 +406,39 @@
             `;
             document.getElementById('modal').style.display = 'flex';
         }
-    
+
         document.getElementsByClassName('close-btn')[0].onclick = function() {
             document.getElementById('modal').style.display = 'none';
         };
-    
+
         window.onclick = function(event) {
             if (event.target === document.getElementById('modal')) {
                 document.getElementById('modal').style.display = 'none';
             }
         };
+
+        function showContent(contentId) {
+            document.querySelectorAll('.content').forEach(content => {
+                if (content.id === contentId) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+        }
+
+        function generateTable(tools) {
+            const tbody = document.getElementById('toolTable').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = ''; // Clear existing table data
+            tools.forEach(tool => {
+                const row = tbody.insertRow();
+                row.insertCell().textContent = tool.name;
+                row.insertCell().textContent = tool.security_function.join(', ');
+                row.insertCell().textContent = tool.asset_category.join(', ');
+                row.insertCell().textContent = tool.environment.join(', ');
+                row.insertCell().textContent = tool.maturity;
+            });
+        }
     </script>
     
 </body>
