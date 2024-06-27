@@ -254,6 +254,17 @@
         </div>
     </div>
     <script>
+        const url = 'https://raw.githubusercontent.com/illusconsulting/CDM-Generator/main/tool-content.json';
+
+        fetch(url)
+            .then(response=> response.text())
+            .then(data => {
+                const tools = JSON.parse(data);
+                updatePage(tools);
+                generateTable(tools);
+            })
+            .catch(error => console.error('Error:', error));
+        
         document.getElementById('fileInput').addEventListener('change', function(event) {
             const fileReader = new FileReader();
             fileReader.onload = function() {
